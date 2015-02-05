@@ -53,6 +53,7 @@ classdef LTIADPsys < handle
 		
 		function update(obj)
 			% This method updates once the control gain
+			% blablabla
 		end
 	end
 	
