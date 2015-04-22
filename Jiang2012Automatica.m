@@ -62,7 +62,7 @@ for i=1:N
     t_save=[t_save;t];
 end
 
-%Dxx=processing_Dxx(Dxx); % Only the distinct columns left
+Dxx=processing_Dxx(Dxx); % Only the distinct columns left
 
 % K=zeros(un,xn);  % Initial stabilizing feedback gain matrix
 P_old=zeros(xn);P=eye(xn)*10; % Initialize the previous cost matrix
@@ -80,11 +80,8 @@ while norm(P-P_old)>1e-10 & it<16   % Stopping criterion for learning
     X2=XX*kron(eye(xn),K');         %
     X1=[Dxx,-X2-XU];                % Left-hand side of the key equation
     Y=-XX*QK(:);                    % Right-hand side of the key equation
-    %pp=X1\Y;                        % Solve the equations in the LS sense
-    pp = pinv(X1)*Y;
-	%P=reshape_p(pp);                % Reconstruct the symmetric matrix
-	P = reshape(pp(1:xn*xn), [xn, xn]);
-	P = (P +P')/2;
+    pp=X1\Y;                        % Solve the equations in the LS sense
+    P=reshape_p(pp);                % Reconstruct the symmetric matrix
     p_save=[p_save,norm(P-P0)];     % Keep track of the cost matrix
     BPv=pp(end-(xn*un-1):end);
     K=inv(R)*reshape(BPv,un,xn)/2   % Get the improved gain matrix
@@ -160,5 +157,37 @@ xlabel('Time (sec)')
         dxx=kron(x',x')';
         dux=kron(x',u')';
         dX=[dx;dxx;dux];
-	end
+    end
+
+% This nested function reconstruct the P matrix from its distinct elements
+    function P=reshape_p(p)
+        P=zeros(xn);
+        ij=0;
+        for i=1:xn
+            for j=1:i
+                ij=ij+1;
+                P(i,j)=p(ij);
+                P(j,i)=P(i,j);
+            end
+        end
+    end
+
+% The following nested function removes the repeated columns from Dxx
+    function Dxx=processing_Dxx(Dxx)
+        ij=[]; ii=[];
+
+        for i=1:xn
+            ii=[ii (i-1)*xn+i];
+        end
+
+        for i=1:xn-1
+            for j=i+1:xn
+                ij=[ij (i-1)*xn+j];
+            end
+        end
+
+        Dxx(:,ii)=Dxx(:,ii)/2;
+        Dxx(:,ij)=[];
+        Dxx=Dxx*2;
+    end
 end
